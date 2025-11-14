@@ -38,6 +38,7 @@ const App = () => (
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/initialize-admin" element={<InitializeAdmin />} />
+          <Route path="/depreciation" element={<Depreciation />} />
           <Route path="/tools/depreciation" element={<Depreciation />} />
           <Route path="/tools/invoicing" element={<Invoicing />} />
           <Route path="/tools/attendance" element={<Attendance />} />
