@@ -1,13 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { AssetEntryForm } from "@/components/depreciation/AssetEntryForm";
 import { DepreciationTable } from "@/components/depreciation/DepreciationTable";
 import { StepIndicator } from "@/components/depreciation/StepIndicator";
+import { ConsolidatedSummary } from "@/components/depreciation/ConsolidatedSummary";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, FileSpreadsheet, FileText, Plus } from "lucide-react";
+import { Download, FileSpreadsheet, FileText, Plus, Save } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useCreateAsset } from "@/hooks/useAssets";
+import { useSaveSchedules } from "@/hooks/useDepreciationSchedules";
 import {
   calculateCompaniesActSchedule,
   calculateIncomeTaxActSchedule,
@@ -28,6 +32,27 @@ const Depreciation = () => {
   const [assetData, setAssetData] = useState<AssetInput | null>(null);
   const [companiesActSchedule, setCompaniesActSchedule] = useState<YearSchedule[]>([]);
   const [incomeTaxActSchedule, setIncomeTaxActSchedule] = useState<YearSchedule[]>([]);
+  const [savedAssetId, setSavedAssetId] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const createAsset = useCreateAsset();
+  const saveSchedules = useSaveSchedules();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      setIsAuthenticated(!!data.session);
+    };
+    checkAuth();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   const handleAssetSubmit = (data: any) => {
     const input: AssetInput = {
@@ -108,11 +133,62 @@ const Depreciation = () => {
     toast.success("CSV exported successfully");
   };
 
+  const handleSaveAsset = async () => {
+    if (!assetData) return;
+
+    if (!isAuthenticated) {
+      toast.error("Please login to save assets");
+      return;
+    }
+
+    try {
+      const assetToSave = {
+        asset_name: assetData.assetName,
+        applicable_law: assetData.applicableLaw,
+        asset_category: assetData.assetCategory,
+        purchase_date: assetData.purchaseDate.toISOString().split("T")[0],
+        original_cost: assetData.originalCost,
+        useful_life: assetData.usefulLife,
+        residual_value_pct: assetData.residualValuePct,
+        depreciation_rate: assetData.depreciationRate,
+        depreciation_method: assetData.depreciationMethod,
+        multi_shift_use: assetData.multiShiftUse,
+        additional_depreciation_eligible: assetData.additionalDepreciationEligible,
+      };
+
+      const result = await createAsset.mutateAsync(assetToSave as any);
+      
+      if (!result) {
+        throw new Error("Failed to create asset");
+      }
+      
+      setSavedAssetId(result.id);
+
+      // Save schedules
+      if (companiesActSchedule.length > 0) {
+        await saveSchedules.mutateAsync({
+          assetId: result.id,
+          schedules: companiesActSchedule,
+        });
+      } else if (incomeTaxActSchedule.length > 0) {
+        await saveSchedules.mutateAsync({
+          assetId: result.id,
+          schedules: incomeTaxActSchedule,
+        });
+      }
+
+      toast.success("Asset and schedules saved successfully!");
+    } catch (error) {
+      console.error("Error saving asset:", error);
+    }
+  };
+
   const resetForm = () => {
     setCurrentStep(1);
     setAssetData(null);
     setCompaniesActSchedule([]);
     setIncomeTaxActSchedule([]);
+    setSavedAssetId(null);
   };
 
   return (
@@ -187,6 +263,12 @@ const Depreciation = () => {
             )}
 
             <div className="flex justify-center gap-4 pt-6">
+              {isAuthenticated && !savedAssetId && (
+                <Button onClick={handleSaveAsset} size="lg" variant="outline">
+                  <Save className="mr-2 h-4 w-4" />
+                  Save to Summary
+                </Button>
+              )}
               <Button onClick={() => setCurrentStep(3)} size="lg">
                 Export Reports
               </Button>
@@ -237,11 +319,40 @@ const Depreciation = () => {
               <Button onClick={() => setCurrentStep(2)} variant="outline">
                 Back to Schedule
               </Button>
-              <Button onClick={resetForm}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Another Asset
-              </Button>
+              <div className="flex gap-2">
+                {isAuthenticated && (
+                  <Button onClick={() => setCurrentStep(4)} variant="outline">
+                    View Summary
+                  </Button>
+                )}
+                <Button onClick={resetForm}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Another Asset
+                </Button>
+              </div>
             </div>
+          </div>
+        )}
+
+        {currentStep === 4 && (
+          <div>
+            {isAuthenticated ? (
+              <ConsolidatedSummary onAddNewAsset={resetForm} />
+            ) : (
+              <Card className="max-w-2xl mx-auto">
+                <CardHeader>
+                  <CardTitle>Authentication Required</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    Please login to view and manage your consolidated asset summary.
+                  </p>
+                  <Button onClick={() => (window.location.href = "/login")}>
+                    Go to Login
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
       </main>

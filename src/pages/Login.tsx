@@ -120,7 +120,6 @@ const Login = () => {
         });
         
         // Update last login
-        // @ts-expect-error - Types will be regenerated after migration
         await supabase
           // @ts-ignore - Types will be regenerated after migration
           .from('profiles')
