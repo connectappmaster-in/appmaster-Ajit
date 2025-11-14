@@ -43,18 +43,31 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get all users with their roles
-    const { data: profiles, error } = await supabase
+    // Get all profiles
+    const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select(`
-        *,
-        user_roles(role)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (profilesError) throw profilesError;
 
-    return new Response(JSON.stringify(profiles), {
+    // Get all user roles
+    const { data: userRoles, error: rolesError } = await supabase
+      .from('user_roles')
+      .select('user_id, role');
+
+    if (rolesError) throw rolesError;
+
+    // Combine profiles with their roles
+    const profilesWithRoles = profiles?.map(profile => {
+      const roles = userRoles?.filter(r => r.user_id === profile.user_id) || [];
+      return {
+        ...profile,
+        user_roles: roles
+      };
+    });
+
+    return new Response(JSON.stringify(profilesWithRoles), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
