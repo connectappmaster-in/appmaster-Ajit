@@ -1,15 +1,17 @@
-import { AssetList } from "@/components/assets/AssetList";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
-export default function Assets() {
+const Assets = () => {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Assets</h1>
-        <p className="text-muted-foreground mt-2">
-          Manage your fixed assets
-        </p>
-      </div>
-      <AssetList />
+    <div className="min-h-screen">
+      <Navbar />
+      <main className="container mx-auto px-4 py-16">
+        <h1 className="text-4xl font-bold mb-6">Assets</h1>
+        <p className="text-muted-foreground">Track and manage IT assets and equipment.</p>
+      </main>
+      <Footer />
     </div>
   );
-}
+};
+
+export default Assets;
