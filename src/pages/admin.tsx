@@ -12,6 +12,7 @@ import { InsightsDashboard } from "@/components/admin/InsightsDashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Menu } from "lucide-react";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ const Admin = () => {
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const activeTab = searchParams.get("tab") || "dashboard";
 
   useEffect(() => {
@@ -77,73 +79,100 @@ const Admin = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <AdminSidebar />
+    <div className="flex min-h-screen bg-gradient-to-br from-background via-accent/5 to-background">
+      <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       
-      <main className="flex-1 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-            <Button variant="outline" onClick={() => navigate("/")}>
-              Back to App
-            </Button>
+      <main className="flex-1 w-full lg:w-auto min-w-0">
+        {/* Mobile header with hamburger */}
+        <div className="lg:hidden sticky top-0 z-30 bg-card/80 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(true)}
+            className="flex-shrink-0"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+          <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+            Admin Dashboard
+          </h1>
+        </div>
+
+        <div className="p-4 sm:p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto">
+            {/* Desktop header */}
+            <div className="hidden lg:flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+              <div>
+                <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  Admin Dashboard
+                </h1>
+                <p className="text-sm text-muted-foreground mt-2">Manage your application and monitor key metrics</p>
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate("/")}
+                className="hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all"
+              >
+                Back to App
+              </Button>
+            </div>
+
+            <Tabs value={activeTab} className="space-y-4 lg:space-y-6">
+              <TabsList className="hidden">
+                <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                <TabsTrigger value="users">Users</TabsTrigger>
+                <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
+                <TabsTrigger value="billing">Billing</TabsTrigger>
+                <TabsTrigger value="tools">Tools</TabsTrigger>
+                <TabsTrigger value="insights">Insights</TabsTrigger>
+                <TabsTrigger value="logs">Logs</TabsTrigger>
+                <TabsTrigger value="settings">Settings</TabsTrigger>
+                <TabsTrigger value="integrations">Integrations</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="dashboard" className="space-y-4 lg:space-y-6 mt-4 lg:mt-0">
+                <DashboardStats />
+              </TabsContent>
+
+              <TabsContent value="users">
+                <UsersManagement />
+              </TabsContent>
+
+              <TabsContent value="subscriptions">
+                <SubscriptionsManagement />
+              </TabsContent>
+
+              <TabsContent value="billing">
+                <BillingManagement />
+              </TabsContent>
+
+              <TabsContent value="tools">
+                <ToolsAccess />
+              </TabsContent>
+
+              <TabsContent value="insights">
+                <InsightsDashboard />
+              </TabsContent>
+
+              <TabsContent value="logs">
+                <AuditLogs />
+              </TabsContent>
+
+              <TabsContent value="settings">
+                <div className="bg-card rounded-lg border border-border p-4 lg:p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4">System Settings</h3>
+                  <p className="text-sm text-muted-foreground">Settings configuration coming soon...</p>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="integrations">
+                <div className="bg-card rounded-lg border border-border p-4 lg:p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4">Integrations</h3>
+                  <p className="text-sm text-muted-foreground">Integrations management coming soon...</p>
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
-
-          <Tabs value={activeTab} className="space-y-6">
-            <TabsList className="hidden">
-              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger value="users">Users</TabsTrigger>
-              <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
-              <TabsTrigger value="billing">Billing</TabsTrigger>
-              <TabsTrigger value="tools">Tools</TabsTrigger>
-              <TabsTrigger value="insights">Insights</TabsTrigger>
-              <TabsTrigger value="logs">Logs</TabsTrigger>
-              <TabsTrigger value="settings">Settings</TabsTrigger>
-              <TabsTrigger value="integrations">Integrations</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="dashboard" className="space-y-6">
-              <DashboardStats />
-            </TabsContent>
-
-            <TabsContent value="users">
-              <UsersManagement />
-            </TabsContent>
-
-            <TabsContent value="subscriptions">
-              <SubscriptionsManagement />
-            </TabsContent>
-
-            <TabsContent value="billing">
-              <BillingManagement />
-            </TabsContent>
-
-            <TabsContent value="tools">
-              <ToolsAccess />
-            </TabsContent>
-
-            <TabsContent value="insights">
-              <InsightsDashboard />
-            </TabsContent>
-
-            <TabsContent value="logs">
-              <AuditLogs />
-            </TabsContent>
-
-            <TabsContent value="settings">
-              <div className="bg-card rounded-lg border border-border p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">System Settings</h3>
-                <p className="text-muted-foreground">Settings configuration coming soon...</p>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="integrations">
-              <div className="bg-card rounded-lg border border-border p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Integrations</h3>
-                <p className="text-muted-foreground">Integrations management coming soon...</p>
-              </div>
-            </TabsContent>
-          </Tabs>
         </div>
       </main>
     </div>
